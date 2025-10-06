@@ -1,4 +1,4 @@
-# PSTQ Points Calculator
+# PSTQ Points Calculator - **Valid**: July 2, 2025 to July 2, 2027 
 
 A local web application to calculate Quebec immigration points for the **Programme de sélection des travailleurs qualifiés (PSTQ)**.
 
