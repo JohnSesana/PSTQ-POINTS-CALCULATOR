@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculateur PSTQ - Points d'immigration Québec</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: #003d7a; color: white; padding: 20px; text-align: center; margin-bottom: 30px; }
+        .main-content { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .form-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .section-title { color: #003d7a; font-size: 1.3em; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; }
+        .field-group { margin-bottom: 20px; }
+        .field-label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .field-input { width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; }
+        .field-input:focus { border-color: #003d7a; outline: none; }
+        .field-help { font-size: 0.9em; color: #666; margin-top: 5px; }
+        .hidden { display: none; }
+        .points-panel { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); position: sticky; top: 20px; }
+        .total-score { background: #003d7a; color: white; padding: 20px; text-align: center; border-radius: 8px; margin-bottom: 20px; }
+        .total-score h2 { font-size: 2.5em; margin-bottom: 5px; }
+        .section-score { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .section-score:last-child { border-bottom: none; }
+        .section-name { font-weight: bold; }
+        .section-points { color: #003d7a; font-weight: bold; }
+        .save-load { margin-bottom: 20px; }
+        .btn { background: #003d7a; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+        .btn:hover { background: #002a5c; }
+        .btn-secondary { background: #666; }
+        .btn-secondary:hover { background: #555; }
+        @media (max-width: 768px) {
+            .main-content { grid-template-columns: 1fr; }
+            .points-panel { position: static; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Calculateur PSTQ</h1>
+            <p>Programme de sélection des travailleurs qualifiés - Québec</p>
+            <p><small>Arrêté 2025-004 | Valide du 2025-07-02 au 2027-07-02</small></p>
+        </div>
+
+        <div class="main-content">
+            <div class="form-container">
+                <div class="save-load">
+                    <button class="btn btn-secondary" onclick="resetForm()">Réinitialiser</button>
+                    <button class="btn" onclick="printPDF()">Imprimer PDF</button>
+                </div>
+                <form id="pstqForm"></form>
+            </div>
+
+            <div class="points-panel">
+                <div class="total-score">
+                    <h2 id="totalPoints">0</h2>
+                    <p>Points totaux</p>
+                </div>
+                <div id="sectionScores"></div>
+                <div id="detailedBreakdown"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let calculatorData = null;
+        let formValues = {};
+
+        // Embedded calculator data
+        calculatorData = {
+  "metadata": {
+    "program": "PSTQ - Programme de sélection des travailleurs qualifiés",
+    "order_number": "Arrêté 2025-004",
+    "source_file": "official-qc-gazette-points-criteria-jul2025.pdf",
+    "effective": "2025-07-02",
+    "valid_until": "2027-07-02",
+    "max_points": {
+      "capital_human": 520,
+      "market_needs": 700,
+      "adaptation": 180,
+      "total": 1400
+    }
+  },
+  "sections": [
+    {
+      "id": "capital_human",
+      "label": "Capital humain",
+      "max_points": 520,
+      "fields": [
+        {
+          "id": "applicant_age",
+          "label": "Âge (en années)",
+          "type": "integer",
+          "min": 18,
+          "max": 99,
+          "points_logic": "age_lookup",
+          "points_data": {
+            "18": 110, "19": 110, "20": 120, "21": 120, "22": 120, "23": 120, "24": 120, "25": 120, "26": 120, "27": 120, "28": 120, "29": 120, "30": 120,
+            "31": 110, "32": 100, "33": 90, "34": 80, "35": 75, "36": 70, "37": 65, "38": 60, "39": 55, "40": 50,
+            "41": 40, "42": 30, "43": 20, "44": 10, "45": 0
+          },
+          "max_points": 120
+        },
+        {
+          "id": "applicant_french_oral_comprehension",
+          "label": "Français – compréhension orale (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3,4], "points": 0},
+            {"levels": [5,6], "points": 38},
+            {"levels": [7,8], "points": 44},
+            {"levels": [9,10,11,12], "points": 50}
+          ],
+          "max_points": 50
+        },
+        {
+          "id": "applicant_french_oral_production",
+          "label": "Français – production orale (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3,4], "points": 0},
+            {"levels": [5,6], "points": 38},
+            {"levels": [7,8], "points": 44},
+            {"levels": [9,10,11,12], "points": 50}
+          ],
+          "max_points": 50
+        },
+        {
+          "id": "applicant_french_written_comprehension",
+          "label": "Français – compréhension écrite (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3,4], "points": 0},
+            {"levels": [5,6], "points": 38},
+            {"levels": [7,8], "points": 44},
+            {"levels": [9,10,11,12], "points": 50}
+          ],
+          "max_points": 50
+        },
+        {
+          "id": "applicant_french_written_production",
+          "label": "Français – production écrite (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3,4], "points": 0},
+            {"levels": [5,6], "points": 38},
+            {"levels": [7,8], "points": 44},
+            {"levels": [9,10,11,12], "points": 50}
+          ],
+          "max_points": 50
+        },
+        {
+          "id": "applicant_education_level",
+          "label": "Niveau de scolarité le plus élevé",
+          "type": "enum",
+          "options": [
+            {"value": "secondaire_général_complété", "label": "Secondaire général complété"},
+            {"value": "secondaire_professionnel_qc_600_899h", "label": "Secondaire professionnel QC (600-899h)"},
+            {"value": "secondaire_professionnel_qc_900h_plus", "label": "Secondaire professionnel QC (900h+)"},
+            {"value": "secondaire_professionnel_hors_qc_1an_plus_temps_plein", "label": "Secondaire professionnel hors QC (1an+ temps plein)"},
+            {"value": "postsecondaire_général_2ans_tp", "label": "Postsecondaire général (2ans temps plein)"},
+            {"value": "postsecondaire_tech_qc_900h_plus", "label": "Postsecondaire technique QC (900h+)"},
+            {"value": "postsecondaire_tech_hors_qc_1_2ans_tp", "label": "Postsecondaire technique hors QC (1-2ans temps plein)"},
+            {"value": "postsecondaire_tech_3ans_tp", "label": "Postsecondaire technique (3ans temps plein)"},
+            {"value": "universitaire_1er_cycle_1an_tp", "label": "Universitaire 1er cycle (1an temps plein)"},
+            {"value": "universitaire_1er_cycle_2ans_tp", "label": "Universitaire 1er cycle (2ans temps plein)"},
+            {"value": "universitaire_1er_cycle_3_4ans_tp", "label": "Universitaire 1er cycle (3-4ans temps plein)"},
+            {"value": "universitaire_1er_cycle_5ans_plus_tp", "label": "Universitaire 1er cycle (5ans+ temps plein)"},
+            {"value": "universitaire_2e_cycle_1an_tp", "label": "Universitaire 2e cycle (1an temps plein)"},
+            {"value": "universitaire_2e_cycle_2ans_plus_tp", "label": "Universitaire 2e cycle (2ans+ temps plein)"},
+            {"value": "universitaire_spécialisation_médicale_2ans_plus_tp", "label": "Universitaire spécialisation médicale (2ans+ temps plein)"},
+            {"value": "universitaire_3e_cycle", "label": "Universitaire 3e cycle"}
+          ],
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "secondaire_général_complété": 13,
+            "secondaire_professionnel_qc_600_899h": 13,
+            "secondaire_professionnel_qc_900h_plus": 26,
+            "secondaire_professionnel_hors_qc_1an_plus_temps_plein": 26,
+            "postsecondaire_général_2ans_tp": 39,
+            "postsecondaire_tech_qc_900h_plus": 52,
+            "postsecondaire_tech_hors_qc_1_2ans_tp": 52,
+            "postsecondaire_tech_3ans_tp": 78,
+            "universitaire_1er_cycle_1an_tp": 78,
+            "universitaire_1er_cycle_2ans_tp": 91,
+            "universitaire_1er_cycle_3_4ans_tp": 104,
+            "universitaire_1er_cycle_5ans_plus_tp": 110,
+            "universitaire_2e_cycle_1an_tp": 110,
+            "universitaire_2e_cycle_2ans_plus_tp": 117,
+            "universitaire_spécialisation_médicale_2ans_plus_tp": 130,
+            "universitaire_3e_cycle": 130
+          },
+          "max_points": 130
+        },
+        {
+          "id": "applicant_experience_total",
+          "label": "Durée de l'expérience de travail (mois) – 5 dernières années",
+          "type": "integer",
+          "min": 0,
+          "max": 60,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 11, "points": 0},
+            {"min": 12, "max": 23, "points": 20},
+            {"min": 24, "max": 35, "points": 40},
+            {"min": 36, "max": 47, "points": 50},
+            {"min": 48, "max": 60, "points": 70}
+          ],
+          "max_points": 70
+        }
+      ]
+    },
+    {
+      "id": "market_needs",
+      "label": "Besoins du marché du travail et priorités gouvernementales",
+      "max_points": 700,
+      "fields": [
+        {
+          "id": "cnp_code",
+          "label": "Profession principale – code CNP 2021 (4 chiffres)",
+          "type": "string",
+          "pattern": "^[0-9]{4}$",
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "feer_category",
+          "label": "Catégorie FEER (0–5) de la profession principale",
+          "type": "enum",
+          "options": [
+            {"value": "0", "label": "FEER 0"},
+            {"value": "1", "label": "FEER 1"},
+            {"value": "2", "label": "FEER 2"},
+            {"value": "3", "label": "FEER 3"},
+            {"value": "4", "label": "FEER 4"},
+            {"value": "5", "label": "FEER 5"}
+          ],
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "profession_diagnostic",
+          "label": "Diagnostic de main-d'œuvre (profession principale)",
+          "type": "enum",
+          "options": [
+            {"value": "equilibre_ou_sans_diagnostic", "label": "Équilibre ou sans diagnostic"},
+            {"value": "leger_deficit", "label": "Léger déficit"},
+            {"value": "deficit", "label": "Déficit"}
+          ],
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "profession_experience",
+          "label": "Expérience (mois) dans la profession principale – 5 dernières années",
+          "type": "integer",
+          "min": 0,
+          "max": 60,
+          "points_logic": "diagnostic_experience",
+          "points_data": {
+            "equilibre_ou_sans_diagnostic": [
+              {"min": 0, "max": 11, "points": 0},
+              {"min": 12, "max": 23, "points": 5},
+              {"min": 24, "max": 35, "points": 10},
+              {"min": 36, "max": 47, "points": 15},
+              {"min": 48, "max": 60, "points": 25}
+            ],
+            "leger_deficit": [
+              {"min": 0, "max": 11, "points": 0},
+              {"min": 12, "max": 23, "points": 70},
+              {"min": 24, "max": 35, "points": 80},
+              {"min": 36, "max": 47, "points": 90},
+              {"min": 48, "max": 60, "points": 100}
+            ],
+            "deficit": [
+              {"min": 0, "max": 11, "points": 0},
+              {"min": 12, "max": 23, "points": 90},
+              {"min": 24, "max": 35, "points": 100},
+              {"min": 36, "max": 47, "points": 110},
+              {"min": 48, "max": 60, "points": 120}
+            ]
+          },
+          "max_points": 120,
+          "depends_on": "profession_diagnostic"
+        },
+        {
+          "id": "quebec_experience",
+          "label": "Durée de l'expérience de travail au Québec (mois) – 5 dernières années",
+          "type": "integer",
+          "min": 0,
+          "max": 60,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 11, "points": 0},
+            {"min": 12, "max": 23, "points": 40},
+            {"min": 24, "max": 35, "points": 80},
+            {"min": 36, "max": 47, "points": 120},
+            {"min": 48, "max": 60, "points": 160}
+          ],
+          "max_points": 160
+        },
+        {
+          "id": "quebec_diploma_has",
+          "label": "Diplôme du Québec obtenu ?",
+          "type": "boolean",
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "quebec_diploma_level",
+          "label": "Niveau du diplôme du Québec",
+          "type": "enum",
+          "options": [
+            {"value": "secondaire_général_complété", "label": "Secondaire général complété"},
+            {"value": "secondaire_professionnel_600_899h", "label": "Secondaire professionnel (600-899h)"},
+            {"value": "secondaire_professionnel_900h_plus", "label": "Secondaire professionnel (900h+)"},
+            {"value": "postsecondaire_général_2ans_tp", "label": "Postsecondaire général (2ans temps plein)"},
+            {"value": "postsecondaire_tech_900h_plus", "label": "Postsecondaire technique (900h+)"},
+            {"value": "postsecondaire_tech_3ans_tp", "label": "Postsecondaire technique (3ans temps plein)"},
+            {"value": "universitaire_1er_cycle_1an_tp", "label": "Universitaire 1er cycle (1an temps plein)"},
+            {"value": "universitaire_1er_cycle_2ans_tp", "label": "Universitaire 1er cycle (2ans temps plein)"},
+            {"value": "universitaire_1er_cycle_3_4ans_tp", "label": "Universitaire 1er cycle (3-4ans temps plein)"},
+            {"value": "universitaire_1er_cycle_5ans_plus_tp", "label": "Universitaire 1er cycle (5ans+ temps plein)"},
+            {"value": "universitaire_2e_cycle_1an_tp", "label": "Universitaire 2e cycle (1an temps plein)"},
+            {"value": "universitaire_2e_cycle_2ans_plus_tp", "label": "Universitaire 2e cycle (2ans+ temps plein)"},
+            {"value": "universitaire_spécialisation_médicale_2ans_plus_tp", "label": "Universitaire spécialisation médicale (2ans+ temps plein)"},
+            {"value": "universitaire_3e_cycle", "label": "Universitaire 3e cycle"}
+          ],
+          "conditional_on": "quebec_diploma_has",
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "secondaire_général_complété": 20,
+            "secondaire_professionnel_600_899h": 20,
+            "secondaire_professionnel_900h_plus": 40,
+            "postsecondaire_général_2ans_tp": 60,
+            "postsecondaire_tech_900h_plus": 80,
+            "postsecondaire_tech_3ans_tp": 120,
+            "universitaire_1er_cycle_1an_tp": 120,
+            "universitaire_1er_cycle_2ans_tp": 140,
+            "universitaire_1er_cycle_3_4ans_tp": 160,
+            "universitaire_1er_cycle_5ans_plus_tp": 170,
+            "universitaire_2e_cycle_1an_tp": 170,
+            "universitaire_2e_cycle_2ans_plus_tp": 180,
+            "universitaire_spécialisation_médicale_2ans_plus_tp": 200,
+            "universitaire_3e_cycle": 200
+          },
+          "max_points": 200
+        },
+        {
+          "id": "outside_cmm_residence",
+          "label": "Durée de résidence à l'extérieur de la CMM (mois)",
+          "type": "integer",
+          "min": 0,
+          "max": 120,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 6},
+            {"min": 12, "max": 23, "points": 16},
+            {"min": 24, "max": 35, "points": 24},
+            {"min": 36, "max": 47, "points": 32},
+            {"min": 48, "max": 120, "points": 40}
+          ],
+          "max_points": 40
+        },
+        {
+          "id": "outside_cmm_work",
+          "label": "Durée d'expérience de travail à l'extérieur de la CMM (mois)",
+          "type": "integer",
+          "min": 0,
+          "max": 120,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 9},
+            {"min": 12, "max": 23, "points": 24},
+            {"min": 24, "max": 35, "points": 36},
+            {"min": 36, "max": 47, "points": 48},
+            {"min": 48, "max": 120, "points": 60}
+          ],
+          "max_points": 60
+        },
+        {
+          "id": "outside_cmm_study",
+          "label": "Durée de séjour d'études à l'extérieur de la CMM (mois)",
+          "type": "integer",
+          "min": 0,
+          "max": 120,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 3},
+            {"min": 12, "max": 23, "points": 8},
+            {"min": 24, "max": 35, "points": 12},
+            {"min": 36, "max": 47, "points": 16},
+            {"min": 48, "max": 120, "points": 20}
+          ],
+          "max_points": 20
+        },
+        {
+          "id": "job_offer_validated",
+          "label": "Offre d'emploi validée dans la profession principale ?",
+          "type": "boolean",
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "job_offer_location",
+          "label": "Lieu de l'emploi",
+          "type": "enum",
+          "options": [
+            {"value": "hors_CMM", "label": "Hors CMM"},
+            {"value": "dans_CMM", "label": "Dans CMM"}
+          ],
+          "conditional_on": "job_offer_validated",
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "hors_CMM": 50,
+            "dans_CMM": 30
+          },
+          "max_points": 50
+        },
+        {
+          "id": "authorization_to_practice",
+          "label": "Autorisation d'exercer par l'autorité de réglementation",
+          "type": "enum",
+          "options": [
+            {"value": "aucune", "label": "Aucune"},
+            {"value": "partielle", "label": "Partielle"},
+            {"value": "complete", "label": "Complète"}
+          ],
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "aucune": 0,
+            "partielle": 50,
+            "complete": 50
+          },
+          "max_points": 50
+        }
+      ]
+    },
+    {
+      "id": "adaptation",
+      "label": "Facteurs d'adaptation",
+      "max_points": 180,
+      "fields": [
+        {
+          "id": "study_stay_finished",
+          "label": "Séjour d'études au Québec terminé sans diplôme (mois)",
+          "type": "integer",
+          "min": 0,
+          "max": 120,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 1},
+            {"min": 12, "max": 23, "points": 3},
+            {"min": 24, "max": 35, "points": 5},
+            {"min": 36, "max": 47, "points": 8},
+            {"min": 48, "max": 120, "points": 10}
+          ],
+          "max_points": 10
+        },
+        {
+          "id": "study_stay_ongoing",
+          "label": "Séjour d'études au Québec en cours (mois)",
+          "type": "integer",
+          "min": 0,
+          "max": 120,
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 5},
+            {"min": 12, "max": 23, "points": 12},
+            {"min": 24, "max": 35, "points": 18},
+            {"min": 36, "max": 47, "points": 24},
+            {"min": 48, "max": 120, "points": 30}
+          ],
+          "max_points": 30
+        },
+        {
+          "id": "family_member_link",
+          "label": "Membre de la parenté au Québec (hors CMM)",
+          "type": "enum",
+          "options": [
+            {"value": "aucun", "label": "Aucun"},
+            {"value": "applicant", "label": "Lié au demandeur principal"},
+            {"value": "spouse", "label": "Lié au conjoint"}
+          ],
+          "help": "Admissible: époux/conjoint, enfant, parent, frère/sœur",
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "aucun": 0,
+            "applicant": 10,
+            "spouse": 5
+          },
+          "max_points": 10
+        },
+        {
+          "id": "spouse_accompanies",
+          "label": "Un(e) conjoint(e) vous accompagne‑t‑il(elle) ?",
+          "type": "boolean",
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "spouse_age",
+          "label": "Âge du/de la conjoint(e)",
+          "type": "integer",
+          "min": 16,
+          "max": 99,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "age_lookup",
+          "points_data": {
+            "16": 18, "17": 18, "18": 18, "19": 18, "20": 20, "21": 20, "22": 20, "23": 20, "24": 20, "25": 20, "26": 20, "27": 20, "28": 20, "29": 20, "30": 20,
+            "31": 18, "32": 17, "33": 16, "34": 15, "35": 14, "36": 12, "37": 10, "38": 8, "39": 7, "40": 6,
+            "41": 5, "42": 4, "43": 3, "44": 2, "45": 0
+          },
+          "max_points": 20
+        },
+        {
+          "id": "spouse_french_oral_comprehension",
+          "label": "Conjoint(e) – compréhension orale (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3], "points": 0},
+            {"levels": [4], "points": 4},
+            {"levels": [5,6], "points": 6},
+            {"levels": [7,8], "points": 8},
+            {"levels": [9,10,11,12], "points": 10}
+          ],
+          "max_points": 10
+        },
+        {
+          "id": "spouse_french_oral_production",
+          "label": "Conjoint(e) – production orale (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3], "points": 0},
+            {"levels": [4], "points": 4},
+            {"levels": [5,6], "points": 6},
+            {"levels": [7,8], "points": 8},
+            {"levels": [9,10,11,12], "points": 10}
+          ],
+          "max_points": 10
+        },
+        {
+          "id": "spouse_french_written_comprehension",
+          "label": "Conjoint(e) – compréhension écrite (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3], "points": 0},
+            {"levels": [4], "points": 4},
+            {"levels": [5,6], "points": 6},
+            {"levels": [7,8], "points": 8},
+            {"levels": [9,10,11,12], "points": 10}
+          ],
+          "max_points": 10
+        },
+        {
+          "id": "spouse_french_written_production",
+          "label": "Conjoint(e) – production écrite (niveau 1–12)",
+          "type": "integer",
+          "min": 1,
+          "max": 12,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "level_bands",
+          "points_data": [
+            {"levels": [1,2,3], "points": 0},
+            {"levels": [4], "points": 4},
+            {"levels": [5,6], "points": 6},
+            {"levels": [7,8], "points": 8},
+            {"levels": [9,10,11,12], "points": 10}
+          ],
+          "max_points": 10
+        },
+        {
+          "id": "spouse_quebec_experience",
+          "label": "Conjoint(e) – expérience de travail au Québec (mois, 5 dernières années)",
+          "type": "integer",
+          "min": 0,
+          "max": 60,
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "month_bands",
+          "points_data": [
+            {"min": 0, "max": 5, "points": 0},
+            {"min": 6, "max": 11, "points": 5},
+            {"min": 12, "max": 23, "points": 10},
+            {"min": 24, "max": 35, "points": 15},
+            {"min": 36, "max": 47, "points": 23},
+            {"min": 48, "max": 60, "points": 30}
+          ],
+          "max_points": 30
+        },
+        {
+          "id": "spouse_education_level",
+          "label": "Conjoint(e) – niveau de scolarité le plus élevé",
+          "type": "enum",
+          "options": [
+            {"value": "secondaire_général_complété", "label": "Secondaire général complété"},
+            {"value": "secondaire_professionnel_qc_600_899h", "label": "Secondaire professionnel QC (600-899h)"},
+            {"value": "secondaire_professionnel_qc_900h_plus", "label": "Secondaire professionnel QC (900h+)"},
+            {"value": "secondaire_professionnel_hors_qc_1an_plus_temps_plein", "label": "Secondaire professionnel hors QC (1an+ temps plein)"},
+            {"value": "postsecondaire_général_2ans_tp", "label": "Postsecondaire général (2ans temps plein)"},
+            {"value": "postsecondaire_tech_qc_900h_plus", "label": "Postsecondaire technique QC (900h+)"},
+            {"value": "postsecondaire_tech_hors_qc_1_2ans_tp", "label": "Postsecondaire technique hors QC (1-2ans temps plein)"},
+            {"value": "postsecondaire_tech_3ans_tp", "label": "Postsecondaire technique (3ans temps plein)"},
+            {"value": "universitaire_1er_cycle_1an_tp", "label": "Universitaire 1er cycle (1an temps plein)"},
+            {"value": "universitaire_1er_cycle_2ans_tp", "label": "Universitaire 1er cycle (2ans temps plein)"},
+            {"value": "universitaire_1er_cycle_3_4ans_tp", "label": "Universitaire 1er cycle (3-4ans temps plein)"},
+            {"value": "universitaire_1er_cycle_5ans_plus_tp", "label": "Universitaire 1er cycle (5ans+ temps plein)"},
+            {"value": "universitaire_2e_cycle_1an_tp", "label": "Universitaire 2e cycle (1an temps plein)"},
+            {"value": "universitaire_2e_cycle_2ans_plus_tp", "label": "Universitaire 2e cycle (2ans+ temps plein)"},
+            {"value": "universitaire_spécialisation_médicale_2ans_plus_tp", "label": "Universitaire spécialisation médicale (2ans+ temps plein)"},
+            {"value": "universitaire_3e_cycle", "label": "Universitaire 3e cycle"}
+          ],
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "secondaire_général_complété": 2,
+            "secondaire_professionnel_qc_600_899h": 2,
+            "secondaire_professionnel_qc_900h_plus": 4,
+            "secondaire_professionnel_hors_qc_1an_plus_temps_plein": 4,
+            "postsecondaire_général_2ans_tp": 6,
+            "postsecondaire_tech_qc_900h_plus": 8,
+            "postsecondaire_tech_hors_qc_1_2ans_tp": 8,
+            "postsecondaire_tech_3ans_tp": 12,
+            "universitaire_1er_cycle_1an_tp": 12,
+            "universitaire_1er_cycle_2ans_tp": 14,
+            "universitaire_1er_cycle_3_4ans_tp": 16,
+            "universitaire_1er_cycle_5ans_plus_tp": 17,
+            "universitaire_2e_cycle_1an_tp": 17,
+            "universitaire_2e_cycle_2ans_plus_tp": 18,
+            "universitaire_spécialisation_médicale_2ans_plus_tp": 20,
+            "universitaire_3e_cycle": 20
+          },
+          "max_points": 20
+        },
+        {
+          "id": "spouse_quebec_diploma_has",
+          "label": "Conjoint(e) – diplôme du Québec ?",
+          "type": "boolean",
+          "conditional_on": "spouse_accompanies",
+          "points_logic": "none",
+          "max_points": 0
+        },
+        {
+          "id": "spouse_quebec_diploma_level",
+          "label": "Conjoint(e) – niveau du diplôme du Québec",
+          "type": "enum",
+          "options": [
+            {"value": "secondaire_général_complété", "label": "Secondaire général complété"},
+            {"value": "secondaire_professionnel_600_899h", "label": "Secondaire professionnel (600-899h)"},
+            {"value": "secondaire_professionnel_900h_plus", "label": "Secondaire professionnel (900h+)"},
+            {"value": "postsecondaire_général_2ans_tp", "label": "Postsecondaire général (2ans temps plein)"},
+            {"value": "postsecondaire_tech_900h_plus", "label": "Postsecondaire technique (900h+)"},
+            {"value": "postsecondaire_tech_3ans_tp", "label": "Postsecondaire technique (3ans temps plein)"},
+            {"value": "universitaire_1er_cycle_1an_tp", "label": "Universitaire 1er cycle (1an temps plein)"},
+            {"value": "universitaire_1er_cycle_2ans_tp", "label": "Universitaire 1er cycle (2ans temps plein)"},
+            {"value": "universitaire_1er_cycle_3_4ans_tp", "label": "Universitaire 1er cycle (3-4ans temps plein)"},
+            {"value": "universitaire_1er_cycle_5ans_plus_tp", "label": "Universitaire 1er cycle (5ans+ temps plein)"},
+            {"value": "universitaire_2e_cycle_1an_tp", "label": "Universitaire 2e cycle (1an temps plein)"},
+            {"value": "universitaire_2e_cycle_2ans_plus_tp", "label": "Universitaire 2e cycle (2ans+ temps plein)"},
+            {"value": "universitaire_spécialisation_médicale_2ans_plus_tp", "label": "Universitaire spécialisation médicale (2ans+ temps plein)"},
+            {"value": "universitaire_3e_cycle", "label": "Universitaire 3e cycle"}
+          ],
+          "conditional_on": "spouse_accompanies && spouse_quebec_diploma_has",
+          "points_logic": "enum_lookup",
+          "points_data": {
+            "secondaire_général_complété": 3,
+            "secondaire_professionnel_600_899h": 3,
+            "secondaire_professionnel_900h_plus": 6,
+            "postsecondaire_général_2ans_tp": 9,
+            "postsecondaire_tech_900h_plus": 12,
+            "postsecondaire_tech_3ans_tp": 18,
+            "universitaire_1er_cycle_1an_tp": 18,
+            "universitaire_1er_cycle_2ans_tp": 21,
+            "universitaire_1er_cycle_3_4ans_tp": 24,
+            "universitaire_1er_cycle_5ans_plus_tp": 25,
+            "universitaire_2e_cycle_1an_tp": 25,
+            "universitaire_2e_cycle_2ans_plus_tp": 27,
+            "universitaire_spécialisation_médicale_2ans_plus_tp": 30,
+            "universitaire_3e_cycle": 30
+          },
+          "max_points": 30
+        }
+      ]
+    }
+  ]
+};
+        
+        // Initialize the app
+        buildForm();
+        calculatePoints();
+
+        function buildForm() {
+            const form = document.getElementById('pstqForm');
+            
+            calculatorData.sections.forEach(section => {
+                const sectionDiv = document.createElement('div');
+                sectionDiv.className = 'form-section';
+                sectionDiv.innerHTML = `<h2 class="section-title">${section.label}</h2>`;
+                
+                section.fields.forEach(field => {
+                    const fieldDiv = document.createElement('div');
+                    fieldDiv.className = 'field-group';
+                    fieldDiv.id = `group-${field.id}`;
+                    
+                    if (field.conditional_on) {
+                        fieldDiv.classList.add('hidden');
+                    }
+                    
+                    fieldDiv.innerHTML = createFieldHTML(field);
+                    sectionDiv.appendChild(fieldDiv);
+                });
+                
+                form.appendChild(sectionDiv);
+            });
+            
+            // Add event listeners
+            form.addEventListener('input', handleInput);
+            form.addEventListener('change', handleInput);
+        }
+
+        function createFieldHTML(field) {
+            let inputHTML = '';
+            
+            switch (field.type) {
+                case 'integer':
+                    inputHTML = `<input type="number" class="field-input" id="${field.id}" min="${field.min || 0}" max="${field.max || 999}" value="0">`;
+                    break;
+                case 'string':
+                    inputHTML = `<input type="text" class="field-input" id="${field.id}" pattern="${field.pattern || ''}" placeholder="Ex: 1234">`;
+                    break;
+                case 'boolean':
+                    inputHTML = `
+                        <select class="field-input" id="${field.id}">
+                            <option value="">Sélectionner...</option>
+                            <option value="true">Oui</option>
+                            <option value="false">Non</option>
+                        </select>`;
+                    break;
+                case 'enum':
+                    inputHTML = `<select class="field-input" id="${field.id}">
+                        <option value="">Sélectionner...</option>
+                        ${field.options.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('')}
+                    </select>`;
+                    break;
+            }
+            
+            const maxPoints = field.max_points > 0 ? ` <span style="color: #666; font-size: 0.9em;">(max: ${field.max_points} pts)</span>` : '';
+            
+            return `
+                <label class="field-label" for="${field.id}">${field.label}${maxPoints}</label>
+                ${inputHTML}
+                ${field.help ? `<div class="field-help">${field.help}</div>` : ''}
+            `;
+        }
+
+        function handleInput(e) {
+            const fieldId = e.target.id;
+            const value = e.target.value;
+            
+            formValues[fieldId] = value;
+            
+            // Handle conditional fields
+            updateConditionalFields();
+            
+            // Recalculate points
+            calculatePoints();
+        }
+
+        function updateConditionalFields() {
+            calculatorData.sections.forEach(section => {
+                section.fields.forEach(field => {
+                    if (field.conditional_on) {
+                        const fieldGroup = document.getElementById(`group-${field.id}`);
+                        const shouldShow = evaluateCondition(field.conditional_on);
+                        
+                        if (shouldShow) {
+                            fieldGroup.classList.remove('hidden');
+                        } else {
+                            fieldGroup.classList.add('hidden');
+                            // Clear value when hidden
+                            const input = document.getElementById(field.id);
+                            if (input) {
+                                input.value = '';
+                                formValues[field.id] = '';
+                            }
+                        }
+                    }
+                });
+            });
+        }
+
+        function evaluateCondition(condition) {
+            // Simple condition evaluation
+            if (condition.includes('&&')) {
+                const parts = condition.split('&&').map(p => p.trim());
+                return parts.every(part => evaluateSingleCondition(part));
+            } else {
+                return evaluateSingleCondition(condition);
+            }
+        }
+
+        function evaluateSingleCondition(condition) {
+            const fieldId = condition.split(' ')[0];
+            const value = formValues[fieldId];
+            
+            if (condition.includes('== true')) {
+                return value === 'true';
+            } else if (condition.includes('== false')) {
+                return value === 'false';
+            }
+            
+            // Handle simple field name conditions (for job_offer_validated, etc.)
+            if (!condition.includes('==')) {
+                return value === 'true';
+            }
+            
+            return false;
+        }
+
+        function calculatePoints() {
+            let totalPoints = 0;
+            const sectionScores = {};
+            
+            calculatorData.sections.forEach(section => {
+                let sectionTotal = 0;
+                
+                section.fields.forEach(field => {
+                    const value = formValues[field.id];
+                    const points = calculateFieldPoints(field, value);
+                    sectionTotal += points;
+                });
+                
+                sectionScores[section.id] = {
+                    label: section.label,
+                    points: sectionTotal,
+                    max: section.max_points
+                };
+                totalPoints += sectionTotal;
+            });
+            
+            updatePointsDisplay(totalPoints, sectionScores);
+        }
+
+        function calculateFieldPoints(field, value) {
+            if (!value || value === '' || field.points_logic === 'none') return 0;
+            
+            switch (field.points_logic) {
+                case 'age_lookup':
+                    const age = parseInt(value);
+                    return field.points_data[age] || (age >= 45 ? 0 : field.points_data['45']);
+                    
+                case 'level_bands':
+                    const level = parseInt(value);
+                    for (const band of field.points_data) {
+                        if (band.levels.includes(level)) {
+                            return band.points;
+                        }
+                    }
+                    return 0;
+                    
+                case 'month_bands':
+                    const months = parseInt(value);
+                    for (const band of field.points_data) {
+                        if (months >= band.min && months <= band.max) {
+                            return band.points;
+                        }
+                    }
+                    return 0;
+                    
+                case 'enum_lookup':
+                    return field.points_data[value] || 0;
+                    
+                case 'diagnostic_experience':
+                    const diagnostic = formValues['profession_diagnostic'];
+                    const experience = parseInt(value);
+                    if (!diagnostic || !field.points_data[diagnostic]) return 0;
+                    
+                    for (const band of field.points_data[diagnostic]) {
+                        if (experience >= band.min && experience <= band.max) {
+                            return band.points;
+                        }
+                    }
+                    return 0;
+                    
+                default:
+                    return 0;
+            }
+        }
+
+        function updatePointsDisplay(total, sections) {
+            document.getElementById('totalPoints').textContent = total;
+            
+            const scoresDiv = document.getElementById('sectionScores');
+            scoresDiv.innerHTML = Object.values(sections).map(section => `
+                <div class="section-score">
+                    <span class="section-name">${section.label}</span>
+                    <span class="section-points">${section.points}/${section.max}</span>
+                </div>
+            `).join('');
+            
+            updateDetailedBreakdown();
+        }
+        
+        function updateDetailedBreakdown() {
+            const breakdownDiv = document.getElementById('detailedBreakdown');
+            let html = '<h3 style="margin: 20px 0 10px 0; color: #003d7a;">Détail des points</h3>';
+            
+            calculatorData.sections.forEach(section => {
+                html += `<div style="margin-bottom: 15px;"><strong>${section.label}</strong></div>`;
+                
+                section.fields.forEach(field => {
+                    const value = formValues[field.id];
+                    const points = calculateFieldPoints(field, value);
+                    const fieldGroup = document.getElementById(`group-${field.id}`);
+                    
+                    if (fieldGroup && !fieldGroup.classList.contains('hidden') && field.max_points > 0) {
+                        const displayValue = getDisplayValue(field, value);
+                        html += `
+                            <div style="margin-left: 15px; margin-bottom: 5px; font-size: 0.9em;">
+                                <span style="color: #666;">${field.label}:</span>
+                                <span style="color: #003d7a; font-weight: bold;">${points} pts</span>
+                                ${displayValue ? `<span style="color: #888;"> (${displayValue})</span>` : ''}
+                            </div>`;
+                    }
+                });
+            });
+            
+            breakdownDiv.innerHTML = html;
+        }
+        
+        function getDisplayValue(field, value) {
+            if (!value || value === '') return '';
+            
+            switch (field.type) {
+                case 'enum':
+                    const option = field.options.find(opt => opt.value === value);
+                    return option ? option.label : value;
+                case 'boolean':
+                    return value === 'true' ? 'Oui' : 'Non';
+                default:
+                    return value;
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('pstq-calculator-data', JSON.stringify(formValues));
+            alert('Données sauvegardées!');
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('pstq-calculator-data');
+            if (saved) {
+                formValues = JSON.parse(saved);
+                
+                // Populate form fields
+                Object.keys(formValues).forEach(fieldId => {
+                    const input = document.getElementById(fieldId);
+                    if (input) {
+                        input.value = formValues[fieldId];
+                    }
+                });
+                
+                updateConditionalFields();
+                calculatePoints();
+                alert('Données chargées!');
+            } else {
+                alert('Aucune donnée sauvegardée trouvée.');
+            }
+        }
+
+        function resetForm() {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser le formulaire?')) {
+                formValues = {};
+                document.getElementById('pstqForm').querySelectorAll('input, select').forEach(input => {
+                    input.value = input.type === 'number' ? '0' : '';
+                });
+                updateConditionalFields();
+                calculatePoints();
+            }
+        }
+
+        function printPDF() {
+            window.print();
+        }
+    </script>
+</body>
+</html>
