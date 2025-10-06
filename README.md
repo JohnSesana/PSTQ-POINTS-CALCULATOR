@@ -2,11 +2,15 @@
 
 A local web application to calculate Quebec immigration points for the **Programme de sélection des travailleurs qualifiés (PSTQ)**.
 
+<img width="1489" height="1200" alt="image" src="https://github.com/user-attachments/assets/9419baad-c87b-4f83-a710-fef0d1c687ea" />
+
+
 ## Quick Start
 
 1. **Download** `pstq-calculator.html`
 2. **Double-click** the file to open in your browser
 3. **Fill out** the form and see your points in real-time
+4. **(optional) ->** Use google chrome for the english translation
 
 ## Features
 
